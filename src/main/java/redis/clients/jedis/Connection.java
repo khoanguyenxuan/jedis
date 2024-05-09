@@ -211,7 +211,7 @@ public class Connection implements Closeable {
 
       } finally {
 
-        if (broken) {
+        if (isBroken()) {
           IOUtils.closeQuietly(socket);
         }
       }
@@ -342,7 +342,7 @@ public class Connection implements Closeable {
   }
 
   protected Object readProtocolWithCheckingBroken() {
-    if (broken) {
+    if (isBroken()) {
       throw new JedisConnectionException("Attempting to read from a broken connection");
     }
 
