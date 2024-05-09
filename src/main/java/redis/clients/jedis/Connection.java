@@ -94,7 +94,7 @@ public class Connection implements Closeable {
       try {
         this.socket.setSoTimeout(soTimeout);
       } catch (SocketException ex) {
-        broken = true;
+        setBroken(true);
         throw new JedisConnectionException(ex);
       }
     }
@@ -107,7 +107,7 @@ public class Connection implements Closeable {
       }
       socket.setSoTimeout(infiniteSoTimeout);
     } catch (SocketException ex) {
-      broken = true;
+      setBroken(true);
       throw new JedisConnectionException(ex);
     }
   }
@@ -116,7 +116,7 @@ public class Connection implements Closeable {
     try {
       socket.setSoTimeout(this.soTimeout);
     } catch (SocketException ex) {
-      broken = true;
+      setBroken(true);
       throw new JedisConnectionException(ex);
     }
   }
@@ -183,7 +183,7 @@ public class Connection implements Closeable {
          */
       }
       // Any other exceptions related to connection?
-      broken = true;
+      setBroken(true);
       throw ex;
     }
   }
@@ -197,21 +197,21 @@ public class Connection implements Closeable {
         outputStream = new RedisOutputStream(socket.getOutputStream());
         inputStream = new RedisInputStream(socket.getInputStream());
 
-        broken = false; // unset broken status when connection is (re)initialized
+        setBroken(false); // unset broken status when connection is (re)initialized
 
       } catch (JedisConnectionException jce) {
 
-        setBroken();
+        setBroken(true);
         throw jce;
 
       } catch (IOException ioe) {
 
-        setBroken();
+        setBroken(true);
         throw new JedisConnectionException("Failed to create input/output stream", ioe);
 
       } finally {
 
-        if (broken) {
+        if (isBroken()) {
           IOUtils.closeQuietly(socket);
         }
       }
@@ -245,7 +245,7 @@ public class Connection implements Closeable {
         throw new JedisConnectionException(ex);
       } finally {
         IOUtils.closeQuietly(socket);
-        setBroken();
+        setBroken(true);
       }
     }
   }
@@ -259,8 +259,8 @@ public class Connection implements Closeable {
     return broken;
   }
 
-  public void setBroken() {
-    broken = true;
+  public void setBroken(boolean broken) {
+    this.broken = broken;
   }
 
   public String getStatusCodeReply() {
@@ -336,13 +336,13 @@ public class Connection implements Closeable {
     try {
       outputStream.flush();
     } catch (IOException ex) {
-      broken = true;
+      setBroken(true);
       throw new JedisConnectionException(ex);
     }
   }
 
   protected Object readProtocolWithCheckingBroken() {
-    if (broken) {
+    if (isBroken()) {
       throw new JedisConnectionException("Attempting to read from a broken connection");
     }
 
@@ -352,7 +352,7 @@ public class Connection implements Closeable {
 //      System.out.println(SafeEncoder.encodeObject(read));
 //      return read;
     } catch (JedisConnectionException exc) {
-      broken = true;
+      setBroken(true);
       throw exc;
     }
   }
